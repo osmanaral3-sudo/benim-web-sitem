@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Gaming Shop</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#0f172a;
+  color:white;
+}
+
+/* TOP BAR */
+#topBar{
+  position:sticky;
+  top:0;
+  z-index:100;
+  transition:transform .3s ease;
+}
+
+/* HEADER */
+header{
+  padding:20px;
+  background:linear-gradient(90deg,#7c3aed,#2563eb);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+a{
+  color:white;
+  text-decoration:none;
+  font-weight:bold;
+  margin-right:15px;
+}
+
+button,input,select{
+  padding:8px;
+  border:none;
+  border-radius:8px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+/* FILTER BAR */
+.filters{
+  display:flex;
+  gap:10px;
+  padding:15px;
+  background:#020617;
+  flex-wrap:wrap;
+}
+
+/* PRODUCTS */
+.products{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:20px;
+  padding:20px;
+}
+
+.product{
+  background:#1e293b;
+  padding:15px;
+  border-radius:12px;
+  cursor:pointer;
+}
+
+.product img{
+  width:100%;
+  height:170px;
+  object-fit:cover;
+  border-radius:10px;
+}
+
+/* MODAL */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.8);
+  z-index:50;
+}
+
+.box{
+  background:#020617;
+  padding:20px;
+  width:400px;
+  margin:60px auto;
+  border-radius:12px;
+}
+
+.close{
+  background:#ef4444;
+  float:right;
+}
+
+/* CART */
+.cart-box{
+  position:absolute;
+  right:0;
+  top:0;
+  width:380px;
+  height:100%;
+  background:#020617;
+  padding:20px;
+  overflow:auto;
+}
+
+.cart-item{
+  display:flex;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.cart-item img{
+  width:55px;
+  height:55px;
+  border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- TOP BAR -->
+<div id="topBar">
+
+<header>
+  <b>🎮 Gaming Shop</b>
+  <div>
+    <a href="about.html">Hakkımızda</a>
+    <button onclick="openAdd()">➕ Ürün Ekle</button>
+    <button onclick="openCart()">🛒 Sepet (<span id="cartCount">0</span>)</button>
+  </div>
+</header>
+
+<div class="filters">
+  <input id="search" placeholder="Ürün ara..." onkeyup="render()">
+  <button onclick="setCategory('all')">Tümü</button>
+  <button onclick="setCategory('mouse')">Mouse</button>
+  <button onclick="setCategory('keyboard')">Klavye</button>
+  <button onclick="setCategory('headset')">Kulaklık</button>
+  <button onclick="setCategory('monitor')">Monitör</button>
+</div>
+
+</div>
+
+<!-- PRODUCTS -->
+<div class="products" id="productList"></div>
+
+<!-- PRODUCT DETAIL -->
+<div class="modal" id="detailModal">
+  <div class="box">
+    <button class="close" onclick="closeDetail()">X</button>
+    <img id="dImg" style="width:100%;border-radius:10px">
+    <h3 id="dName"></h3>
+    <p id="dPrice"></p>
+    <button onclick="addDetailToCart()">Sepete Ekle</button>
+  </div>
+</div>
+
+<!-- ADD PRODUCT -->
+<div class="modal" id="addModal">
+  <div class="box">
+    <button class="close" onclick="closeAdd()">X</button>
+    <h3>➕ Ürün Ekle</h3>
+    <input id="addName" placeholder="Ürün Adı"><br><br>
+    <input id="addPrice" type="number" placeholder="Fiyat"><br><br>
+    <select id="addCategory">
+      <option value="mouse">Mouse</option>
+      <option value="keyboard">Klavye</option>
+      <option value="headset">Kulaklık</option>
+      <option value="monitor">Monitör</option>
+    </select><br><br>
+    <input id="addImg" placeholder="Görsel URL (opsiyonel)"><br><br>
+    <button onclick="addProduct()">Ürünü Kaydet</button>
+  </div>
+</div>
+
+<!-- CART -->
+<div class="modal" id="cartModal">
+  <div class="cart-box">
+    <button class="close" onclick="closeCart()">X</button>
+    <h3>🧾 Sepet</h3>
+    <div id="cartItems"></div>
+    <b>Toplam: <span id="total">0</span> TL</b>
+  </div>
+</div>
+
+<!-- ABOUT SECTION -->
+<div id="about" style="
+  padding:60px 20px;
+  background:#020617;
+  border-top:2px solid #1e293b;
+">
+  <h2>🎮 Hakkımızda</h2>
+  <p>
+    Gaming Shop, oyuncular için yüksek performanslı ekipmanları
+    tek çatı altında sunmak amacıyla kurulmuş modern bir demo e-ticaret sitesidir.
+  </p>
+  <p>
+    Mouse, klavye, kulaklık ve monitör gibi ürünlerde
+    performans, kalite ve tasarımı ön planda tutuyoruz.
+  </p>
+  <p>
+    Bu proje eğitim ve geliştirme amaçlı hazırlanmıştır.
+    Gerçek ödeme veya backend sistemi içermez.
+  </p>
+  <p style="opacity:.7">
+    © 2025 Gaming Shop — Power for Gamers 💪
+  </p>
+</div>
+
+<script>
+/* SCROLL BAR GİZLE/GÖSTER */
+let lastScroll=0;
+const topBar=document.getElementById("topBar");
+
+window.addEventListener("scroll",()=>{
+  const cur=window.pageYOffset;
+  if(cur>lastScroll && cur>120){
+    topBar.style.transform="translateY(-100%)";
+  }else{
+    topBar.style.transform="translateY(0)";
+  }
+  lastScroll=cur;
+});
+
+/* DATA */
+const images={
+ mouse:"https://images.unsplash.com/photo-1587202372775-e229f172b9d3",
+ keyboard:"https://images.unsplash.com/photo-1587829741301-dc798b83add3",
+ headset:"https://images.unsplash.com/photo-1618365908648-e71bd5716cba",
+ monitor:"https://images.unsplash.com/photo-1614624532983-4ce03382d63d"
+};
+
+let products=[],cart=[],selected=null,category="all",id=1;
+
+/* INIT PRODUCTS */
+for(let c in images){
+  for(let i=1;i<=25;i++){
+    products.push({
+      id:id++,
+      name:c.toUpperCase()+" Model "+i,
+      category:c,
+      price:1500+Math.floor(Math.random()*5000),
+      img:images[c]
+    });
+  }
+}
+
+function setCategory(c){category=c;render();}
+
+function render(){
+  const list=document.getElementById("productList");
+  const text=document.getElementById("search").value.toLowerCase();
+  list.innerHTML="";
+  products.filter(p=>
+    (category==="all"||p.category===category) &&
+    p.name.toLowerCase().includes(text)
+  ).forEach(p=>{
+    list.innerHTML+=`
+      <div class="product" onclick="openDetail(${p.id})">
+        <img src="${p.img}">
+        <h4>${p.name}</h4>
+        <p>${p.price} TL</p>
+      </div>`;
+  });
+}
+
+/* DETAIL */
+function openDetail(pid){
+  selected=products.find(p=>p.id===pid);
+  dImg.src=selected.img;
+  dName.innerText=selected.name;
+  dPrice.innerText=selected.price+" TL";
+  detailModal.style.display="block";
+}
+function closeDetail(){detailModal.style.display="none";}
+function addDetailToCart(){cart.push(selected);updateCart();closeDetail();}
+
+/* CART */
+function updateCart(){
+  cartItems.innerHTML="";
+  let t=0;
+  cart.forEach((i,idx)=>{
+    t+=i.price;
+    cartItems.innerHTML+=`
+      <div class="cart-item">
+        <img src="${i.img}">
+        <div>${i.name}<br>${i.price} TL
+          <button onclick="cart.splice(${idx},1);updateCart()">❌</button>
+        </div>
+      </div>`;
+  });
+  cartCount.innerText=cart.length;
+  total.innerText=t;
+}
+function openCart(){cartModal.style.display="block";}
+function closeCart(){cartModal.style.display="none";}
+
+/* ADD PRODUCT */
+function openAdd(){addModal.style.display="block";}
+function closeAdd(){addModal.style.display="none";}
+function addProduct(){
+  if(!addName.value||!addPrice.value)return alert("Boş alan var");
+  products.push({
+    id:id++,
+    name:addName.value,
+    price:+addPrice.value,
+    category:addCategory.value,
+    img:addImg.value||images[addCategory.value]
+  });
+  closeAdd();
+  render();
+}
+
+render();
+</script>
+
+</body>
+</html>
